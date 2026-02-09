@@ -1,0 +1,22 @@
+# ─── Server ───
+server_port: 8000
+log_level: INFO
+
+# ─── Facial Emotion ───
+facial:
+  concerning_threshold: 0.40    # angry + disgust combined
+  backend: tensorflow            # or pytorch
+
+# ─── Speech Emotion ───
+speech:
+  concerning_threshold: 0.45    # angry confidence
+  model_path: ./models/sensevoice-small
+  sample_rate: 16000
+  channels: 1
+
+# ─── Score Fusion ───
+fusion:
+  facial_weight: 0.60
+  speech_weight: 0.40
+  green_threshold: 0.25          # below this = GREEN
+  red_threshold: 0.50            # at or above this = RED
