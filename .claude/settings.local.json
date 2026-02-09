@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip install:*)",
+      "Bash(set:*)",
+      "Bash(python -m pytest tests/test_facial.py tests/test_speech.py -v)",
+      "Bash($env:PYTHONPATH=\"src\")"
+    ]
+  }
+}

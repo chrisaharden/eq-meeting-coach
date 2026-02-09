@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.venv/
+venv/
+models/sensevoice-small/
+*.onnx
+*.pt
+*.h5
+*.pb
+.pytest_cache/
