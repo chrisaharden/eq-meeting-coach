@@ -8,6 +8,8 @@ object AppConfig {
 
     // Capture (used by EPIC-2)
     const val CAPTURE_INTERVAL_SECONDS = 4L
+    const val CAPTURE_IMAGE_WIDTH = 640
+    const val CAPTURE_IMAGE_HEIGHT = 480
     const val AUDIO_SAMPLE_RATE = 16000
     const val AUDIO_CHANNELS = 1
     const val AUDIO_BIT_DEPTH = 16

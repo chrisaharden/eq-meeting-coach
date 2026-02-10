@@ -2,6 +2,7 @@ package com.eqcoach.ui.screens.indicator
 
 import android.app.Activity
 import android.view.WindowManager
+import android.widget.Toast
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -17,6 +18,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -34,13 +36,22 @@ fun IndicatorScreen(
     onStopSession: () -> Unit,
 ) {
     val verdict by sessionViewModel.currentVerdict.collectAsState()
+    val errorMessage by sessionViewModel.errorMessage.collectAsState()
     val animatedColor by animateColorAsState(
         targetValue = verdict.toColor(),
         animationSpec = tween(durationMillis = AppConfig.COLOR_TRANSITION_MS),
         label = "verdictColor",
     )
 
-    val activity = LocalContext.current as? Activity
+    val context = LocalContext.current
+    val activity = context as? Activity
+
+    LaunchedEffect(errorMessage) {
+        errorMessage?.let { msg ->
+            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+            sessionViewModel.clearError()
+        }
+    }
 
     // Acquire wake lock and set max brightness while this screen is displayed
     DisposableEffect(Unit) {

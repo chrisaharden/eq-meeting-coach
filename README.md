@@ -8,9 +8,11 @@ Real-time emotional intelligence feedback during meetings. This app captures vid
 eq-meeting-coach/
 ├── app/                          # Android app (EPIC-1 & EPIC-2)
 │   └── src/main/kotlin/com/eqcoach/
+│       ├── capture/              # Camera & audio capture (EPIC-2)
 │       ├── config/AppConfig.kt
 │       ├── model/SessionState.kt, Verdict.kt
-│       ├── service/CaptureService.kt
+│       ├── network/AnalyzeClient.kt
+│       ├── service/CaptureService.kt, CaptureServiceImpl.kt
 │       ├── ui/navigation/, screens/, theme/
 │       ├── viewmodel/SessionViewModel.kt
 │       ├── EQCoachApplication.kt
@@ -40,6 +42,11 @@ eq-meeting-coach/
 - Android SDK 34
 
 ### Build
+1. Open the project in Android Studio (File -> Open -> select project root).
+2. Let Gradle sync complete.
+3. Select a device/emulator (minSdk 26 / Android 8.0+).
+4. Click **Run** (or `./gradlew assembleDebug` from CLI).
+
 ```bash
 ./gradlew assembleDebug
 ```
@@ -49,6 +56,7 @@ Edit `app/src/main/kotlin/com/eqcoach/config/AppConfig.kt`:
 ```kotlin
 object AppConfig {
     const val SERVER_URL = "https://192.168.1.100:8000"
+    const val ANALYZE_ENDPOINT = "/analyze"
 }
 ```
 Change `SERVER_URL` to the local IP of the machine running the inference server.
@@ -65,6 +73,8 @@ Change `SERVER_URL` to the local IP of the machine running the inference server.
 - **Navigation**: Compose Navigation, single-Activity
 - **State**: ViewModel + StateFlow
 - **Networking**: OkHttp
+- **Serialization**: kotlinx.serialization
+- **Permissions**: Accompanist Permissions library
 - **Min SDK**: 26 (Android 8.0) | **Target SDK**: 34
 
 ## Inference Server (EPIC-3)
