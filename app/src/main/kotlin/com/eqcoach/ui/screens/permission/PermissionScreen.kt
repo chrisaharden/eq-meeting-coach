@@ -51,6 +51,13 @@ fun PermissionScreen(onPermissionsGranted: () -> Unit) {
         hasRequestedOnce = true
     }
 
+    // Auto-request permissions on first launch
+    LaunchedEffect(Unit) {
+        if (!permissionsState.allPermissionsGranted && !hasRequestedOnce) {
+            permissionsState.launchMultiplePermissionRequest()
+        }
+    }
+
     // Navigate away as soon as all permissions are granted
     LaunchedEffect(permissionsState.allPermissionsGranted) {
         if (permissionsState.allPermissionsGranted) {
