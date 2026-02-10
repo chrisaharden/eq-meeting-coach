@@ -64,4 +64,7 @@ dependencies {
     implementation(libs.accompanist.permissions)
 
     debugImplementation(libs.androidx.ui.tooling)
+
+    testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
 }

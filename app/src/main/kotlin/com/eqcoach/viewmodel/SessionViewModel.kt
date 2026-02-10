@@ -6,6 +6,7 @@ import com.eqcoach.config.AppConfig
 import com.eqcoach.model.SessionState
 import com.eqcoach.model.Verdict
 import com.eqcoach.service.CaptureService
+import com.eqcoach.service.StubCaptureService
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,7 +23,7 @@ class SessionViewModel : ViewModel() {
     private val _currentVerdict = MutableStateFlow(Verdict.GRAY)
     val currentVerdict: StateFlow<Verdict> = _currentVerdict.asStateFlow()
 
-    private var captureService: CaptureService? = null
+    private var captureService: CaptureService = StubCaptureService()
     private var pollJob: Job? = null
 
     fun setCaptureService(service: CaptureService) {
@@ -35,15 +36,19 @@ class SessionViewModel : ViewModel() {
         _sessionState.value = SessionState.ACTIVE
         _currentVerdict.value = Verdict.GRAY
 
-        captureService?.startCapture()
+        captureService.startCapture()
         startPolling()
     }
 
     fun stopSession() {
+        if (_sessionState.value != SessionState.ACTIVE) return
+
+        _sessionState.value = SessionState.STOPPED
+
         pollJob?.cancel()
         pollJob = null
 
-        captureService?.stopCapture()
+        captureService.stopCapture()
 
         _currentVerdict.value = Verdict.GRAY
         _sessionState.value = SessionState.IDLE
@@ -53,10 +58,8 @@ class SessionViewModel : ViewModel() {
         pollJob = viewModelScope.launch {
             while (isActive && _sessionState.value == SessionState.ACTIVE) {
                 try {
-                    captureService?.let { service ->
-                        val verdict = service.getCurrentVerdict()
-                        _currentVerdict.value = verdict
-                    }
+                    val verdict = captureService.getCurrentVerdict()
+                    _currentVerdict.value = verdict
                 } catch (_: Exception) {
                     // Keep current verdict on transient errors
                 }

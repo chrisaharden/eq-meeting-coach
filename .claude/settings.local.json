@@ -8,7 +8,8 @@
       "Bash(cmd.exe:*)",
       "Bash(JAVA_HOME=\"/c/Program Files/Android/Android Studio/jbr\" /c/dev/EQMeetingCoach/eq-android-shell/gradle-8.5/bin/gradle:*)",
       "Bash(JAVA_HOME=\"/c/Program Files/Android/Android Studio/jbr\" \"/c/dev/EQMeetingCoach/eq-android-shell/gradlew\" --stop:*)",
-      "Bash(JAVA_HOME=\"/c/Program Files/Android/Android Studio/jbr\" ./gradlew.bat:*)"
+      "Bash(JAVA_HOME=\"/c/Program Files/Android/Android Studio/jbr\" ./gradlew.bat:*)",
+      "Bash(JAVA_HOME=\"/c/Program Files/Android/Android Studio/jbr\" ./gradlew.bat test:*)"
     ]
   }
 }
