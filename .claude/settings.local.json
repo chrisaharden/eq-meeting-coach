@@ -4,7 +4,9 @@
       "Bash(dir:*)",
       "Bash(docker-compose down:*)",
       "Bash(docker-compose:*)",
-      "Bash(timeout 10 curl:*)"
+      "Bash(timeout 10 curl:*)",
+      "Bash(docker exec:*)",
+      "Bash(docker cp:*)"
     ]
   }
 }

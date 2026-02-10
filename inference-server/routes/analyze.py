@@ -21,6 +21,7 @@ async def analyze(
     audio: UploadFile = File(...),
 ) -> AnalyzeResponse:
     """Accept an image frame and audio clip, return an emotion verdict."""
+    logger.info("Received /analyze request")
 
     # Validate content types
     if frame.content_type not in ALLOWED_IMAGE_TYPES:
