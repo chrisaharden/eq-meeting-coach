@@ -1,0 +1,16 @@
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+pydantic==2.5.0
+pyyaml==6.0.1
+deepface==0.0.79
+funasr==1.0.23
+modelscope
+umap-learn
+torch==2.1.0
+torchaudio==2.1.0
+numpy==1.24.3
+Pillow==10.1.0
+soundfile==0.12.1
+pytest==7.4.3
+httpx==0.25.2

@@ -1,15 +1,3 @@
-*.iml
-.gradle
-/local.properties
-/.idea
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
-local.properties
-/app/build
-
 # Claude Code session data
 .claude/
 
@@ -22,10 +10,18 @@ build/
 *.apk
 *.ap_
 *.dex
+*.iml
 local.properties
 .idea/
-*.iml
 captures/
+.externalNativeBuild
+.cxx
+
+# Python
+__pycache__/
+*.pyc
+.env
+venv/
 
 # OS
 .DS_Store
