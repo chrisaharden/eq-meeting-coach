@@ -4,7 +4,8 @@
       "Bash(pip install:*)",
       "Bash(set:*)",
       "Bash(python -m pytest tests/test_facial.py tests/test_speech.py -v)",
-      "Bash($env:PYTHONPATH=\"src\")"
+      "Bash($env:PYTHONPATH=\"src\")",
+      "Bash(python -m pytest:*)"
     ]
   }
 }
