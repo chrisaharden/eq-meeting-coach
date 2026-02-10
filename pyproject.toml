@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "eq-models"
+version = "0.1.0"
+description = "EQ Meeting Coach — ML Models & Score Fusion (EPIC-4)"
+requires-python = ">=3.11"
+dependencies = [
+    "deepface>=0.0.89",
+    "tf-keras>=2.16.0",
+    "funasr>=1.0.0",
+    "pydantic>=2.0.0",
+    "PyYAML>=6.0",
+    "numpy>=1.24.0",
+    "opencv-python>=4.8.0",
+    "librosa>=0.10.0",
+    "soundfile>=0.12.0",
+    "Pillow>=10.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

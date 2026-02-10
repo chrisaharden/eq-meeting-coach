@@ -20,8 +20,21 @@ captures/
 # Python
 __pycache__/
 *.pyc
+*.egg-info/
+dist/
+.eggs/
+*.egg
 .env
 venv/
+.venv/
+.pytest_cache/
+
+# ML model weights
+models/sensevoice-small/
+*.onnx
+*.pt
+*.h5
+*.pb
 
 # OS
 .DS_Store

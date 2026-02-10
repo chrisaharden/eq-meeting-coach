@@ -10,7 +10,9 @@
       "Bash(docker-compose down:*)",
       "Bash(timeout 10 curl:*)",
       "Bash(docker exec:*)",
-      "Bash(docker cp:*)"
+      "Bash(docker cp:*)",
+      "Bash(pip install:*)",
+      "Bash(python -m pytest:*)"
     ]
   }
 }
