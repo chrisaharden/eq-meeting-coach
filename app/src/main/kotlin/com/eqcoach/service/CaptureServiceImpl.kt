@@ -5,6 +5,7 @@ import android.util.Log
 import com.eqcoach.capture.AudioCapture
 import com.eqcoach.capture.CameraCapture
 import com.eqcoach.model.Verdict
+import com.eqcoach.network.AnalyzeClient
 
 /**
  * Concrete implementation of [CaptureService] that coordinates camera frame
@@ -14,8 +15,8 @@ import com.eqcoach.model.Verdict
  * for inspection. The verdict is always [Verdict.GRAY] until server
  * communication is added in Wave 2 (STORY-2.3).
  *
- * Wave 2 will extend [getCurrentVerdict] to POST frame + audio to the inference
- * server and parse the returned verdict.
+ * Wave 2 (STORY-2.3): [getCurrentVerdict] POSTs frame + audio to the inference
+ * server via [AnalyzeClient] and returns the parsed verdict.
  */
 class CaptureServiceImpl(private val context: Context) : CaptureService {
 
@@ -25,6 +26,7 @@ class CaptureServiceImpl(private val context: Context) : CaptureService {
 
     private val cameraCapture = CameraCapture(context)
     private val audioCapture = AudioCapture()
+    private val analyzeClient = AnalyzeClient()
 
     @Volatile
     private var isActive = false
@@ -82,6 +84,7 @@ class CaptureServiceImpl(private val context: Context) : CaptureService {
 
     override fun stopCapture() {
         isActive = false
+        analyzeClient.cancelInflight()
         cameraCapture.stop()
         audioCapture.stop()
         latestFrameData = null
@@ -91,25 +94,26 @@ class CaptureServiceImpl(private val context: Context) : CaptureService {
     }
 
     /**
-     * Grabs the latest camera frame and audio chunk, then returns the current
-     * verdict.
+     * Grabs the latest camera frame and audio chunk, POSTs them to the
+     * inference server, and returns the parsed verdict.
      *
-     * In Wave 1 this always returns [Verdict.GRAY].
-     * In Wave 2 (STORY-2.3) this will POST both payloads to the inference
-     * server and return the parsed verdict.
+     * Returns [Verdict.GRAY] if capture data is not yet available (camera
+     * still initializing or no audio buffered). Throws [ServerException] on
+     * network/server errors so the caller can surface feedback to the user.
      */
     override suspend fun getCurrentVerdict(): Verdict {
         if (!isActive) return Verdict.GRAY
 
-        // Capture a frame from the camera.
         val frame = cameraCapture.captureFrame()
         latestFrameData = frame
 
-        // Get the latest audio chunk.
         val audio = audioCapture.getLatestChunk()
         latestAudioData = audio
 
-        // TODO STORY-2.3: POST frame + audio to server → parse verdict.
-        return currentVerdict
+        if (frame == null || audio == null) return Verdict.GRAY
+
+        val verdict = analyzeClient.analyze(frame, audio)
+        currentVerdict = verdict
+        return verdict
     }
 }
