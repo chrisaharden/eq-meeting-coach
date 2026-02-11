@@ -5,14 +5,21 @@ WORKDIR /app
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     libsndfile1 \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
-COPY requirements.txt .
+COPY inference-server/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application
-COPY . .
+# Copy ML models package
+COPY src/ /app/src/
+COPY config.yaml /app/config.yaml
+ENV PYTHONPATH="/app/src:${PYTHONPATH}"
+
+# Copy server application
+COPY inference-server/ /app/
 
 # Expose port
 EXPOSE 8000

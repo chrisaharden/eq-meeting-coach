@@ -34,9 +34,15 @@ async def startup() -> None:
     global models_loaded
     logger.info("Starting EQ Meeting Coach Inference Server on port %s", settings.server_port)
     logger.info("Configuration: %s", settings.model_dump())
-    # With stubs, models are immediately "ready"
-    models_loaded = True
-    logger.info("Server ready — models loaded (stubs active)")
+    try:
+        from eq_models.facial import analyze_face
+        from eq_models.speech import analyze_speech
+        from eq_models.fusion import compute_verdict
+        models_loaded = True
+        logger.info("Server ready — real ML models available")
+    except Exception:
+        logger.exception("Failed to import ML models — falling back to stubs")
+        models_loaded = False
 
 
 @app.get("/health", response_model=HealthResponse)
