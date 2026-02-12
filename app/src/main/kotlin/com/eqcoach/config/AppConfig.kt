@@ -2,7 +2,7 @@ package com.eqcoach.config
 
 object AppConfig {
     // Server
-    const val SERVER_URL = "https://192.168.1.100:8000"
+    const val SERVER_URL = "http://192.168.1.195:8000"
     const val ANALYZE_ENDPOINT = "/analyze"
     const val TIMEOUT_SECONDS = 8L
 
