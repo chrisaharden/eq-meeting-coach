@@ -120,8 +120,9 @@ curl http://localhost:8000/health
 ```
 
 ### Step 4 — Build and install the Android app
-Connect your phone via USB, then:
+Connect your phone via USB, then from the project root (`eq-meeting-coach/`):
 ```bash
+cd C:\dev\EQMeetingCoach\eq-meeting-coach
 ./gradlew installDebug
 ```
 Or open the project in Android Studio and click **Run**.
