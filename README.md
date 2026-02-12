@@ -101,9 +101,15 @@ python -c "from modelscope import snapshot_download; snapshot_download('iic/Sens
 This downloads ~893MB of model weights. DeepFace weights (~35MB) download automatically on first use inside the container.
 
 ### Step 3 — Start the inference server
+First time (or after code/dependency changes):
 ```bash
 cd inference-server
 docker-compose up --build
+```
+Subsequent runs (no code changes):
+```bash
+cd inference-server
+docker-compose up
 ```
 Wait for the log message: `Server ready — real ML models available`
 
