@@ -55,11 +55,12 @@ eq-meeting-coach/
 Edit `app/src/main/kotlin/com/eqcoach/config/AppConfig.kt`:
 ```kotlin
 object AppConfig {
-    const val SERVER_URL = "https://192.168.1.100:8000"
+    const val SERVER_URL = "http://<YOUR_PC_IP>:8000"
     const val ANALYZE_ENDPOINT = "/analyze"
 }
 ```
 Change `SERVER_URL` to the local IP of the machine running the inference server.
+Also update the IP in `app/src/main/res/xml/network_security_config.xml` to match.
 
 ### App Flow
 1. Launch -> Permission screen (requests CAMERA + RECORD_AUDIO)
@@ -77,13 +78,74 @@ Change `SERVER_URL` to the local IP of the machine running the inference server.
 - **Permissions**: Accompanist Permissions library
 - **Min SDK**: 26 (Android 8.0) | **Target SDK**: 34
 
+## Running the Demo (End-to-End)
+
+### Prerequisites
+- Docker Desktop running on your PC
+- Android phone with USB debugging enabled
+- Phone and PC on the same Wi-Fi network
+- Android SDK / `gradlew` available (or Android Studio)
+
+### Step 1 — Find your PC's local IP
+```bash
+ipconfig    # Windows
+ifconfig    # macOS/Linux
+```
+Update the IP in `AppConfig.kt` and `network_security_config.xml` if it differs from the current value.
+
+### Step 2 — Download SenseVoice model weights (first time only)
+```bash
+pip install modelscope
+python -c "from modelscope import snapshot_download; snapshot_download('iic/SenseVoiceSmall', local_dir='inference-server/models/sensevoice-small')"
+```
+This downloads ~893MB of model weights. DeepFace weights (~35MB) download automatically on first use inside the container.
+
+### Step 3 — Start the inference server
+```bash
+cd inference-server
+docker-compose up --build
+```
+Wait for the log message: `Server ready — real ML models available`
+
+Verify the server is running:
+```bash
+curl http://localhost:8000/health
+# Expected: {"status":"ok","models_loaded":true}
+```
+
+### Step 4 — Build and install the Android app
+Connect your phone via USB, then:
+```bash
+./gradlew installDebug
+```
+Or open the project in Android Studio and click **Run**.
+
+### Step 5 — Run on your phone
+1. Open the **EQ Coach** app
+2. Grant camera and microphone permissions when prompted
+3. Tap **Start Session**
+4. The screen color updates every ~4 seconds: GREEN (calm), YELLOW (elevated), or RED (high concern)
+
+### Notes
+- First analysis request may be slow (~30-60s) as models load for the first time inside the container
+- Subsequent requests take ~5-8 seconds per verdict update
+- The server runs CPU-only unless nvidia-docker is configured for GPU passthrough
+- To remove GPU requirements from docker-compose, delete the `deploy.resources.reservations` block
+
 ## Inference Server (EPIC-3)
 
 ```bash
 cd inference-server
-docker-compose up -d
+docker-compose up --build
 curl http://localhost:8000/health
 ```
+
+### API Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/health` | Health check — returns `{"status":"ok","models_loaded":true}` |
+| `POST` | `/analyze` | Multipart form: `frame` (image/jpeg) + `audio` (audio/wav) — returns `{"verdict":"GREEN\|YELLOW\|RED"}` |
 
 ## ML Models (EPIC-4)
 
