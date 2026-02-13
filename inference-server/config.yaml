@@ -16,7 +16,7 @@ speech:
 
 # ─── Score Fusion ───
 fusion:
-  facial_weight: 0.60
-  speech_weight: 0.40
+  facial_weight: 0.40
+  speech_weight: 0.60
   green_threshold: 0.25          # below this = GREEN
   red_threshold: 0.50            # at or above this = RED
