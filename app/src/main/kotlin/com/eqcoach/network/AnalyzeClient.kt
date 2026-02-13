@@ -35,7 +35,7 @@ class AnalyzeClient(
     @Volatile
     private var inflightCall: Call? = null
 
-    suspend fun analyze(frame: ByteArray, audio: ByteArray): Verdict {
+    suspend fun analyze(frame: ByteArray, audio: ByteArray): AnalyzeResponse {
         val body = MultipartBody.Builder()
             .setType(MultipartBody.FORM)
             .addFormDataPart(
@@ -87,7 +87,7 @@ class AnalyzeClient(
                             val bodyStr = resp.body?.string()
                                 ?: throw ServerException("Empty response body")
                             val result = json.decodeFromString<AnalyzeResponse>(bodyStr)
-                            if (cont.isActive) cont.resume(result.verdict)
+                            if (cont.isActive) cont.resume(result)
                         } catch (e: ServerException) {
                             if (cont.isActive) cont.resumeWithException(e)
                         } catch (e: Exception) {
@@ -116,6 +116,18 @@ class AnalyzeClient(
 }
 
 @Serializable
-data class AnalyzeResponse(val verdict: Verdict)
+data class DebugInfo(
+    val facial_emotions: Map<String, Double> = emptyMap(),
+    val facial_dominant: String = "",
+    val speech_emotions: Map<String, Double> = emptyMap(),
+    val speech_dominant: String = "",
+    val fused_score: Double = 0.0,
+)
+
+@Serializable
+data class AnalyzeResponse(
+    val verdict: Verdict,
+    val debug: DebugInfo? = null,
+)
 
 class ServerException(message: String, cause: Throwable? = null) : Exception(message, cause)

@@ -34,9 +34,12 @@ def _get_model():
     """Load the SenseVoice model once (lazy singleton)."""
     global _model
     if _model is None:
+        import torch
         from funasr import AutoModel
         model_path = str(Path(_MODEL_PATH).resolve())
-        _model = AutoModel(model=model_path, device="cuda:0")
+        device = "cuda:0" if torch.cuda.is_available() else "cpu"
+        logger.info("Loading SenseVoice model from %s on %s", model_path, device)
+        _model = AutoModel(model=model_path, device=device)
     return _model
 
 

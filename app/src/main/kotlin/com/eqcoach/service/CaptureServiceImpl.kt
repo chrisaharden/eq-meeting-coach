@@ -6,22 +6,20 @@ import com.eqcoach.capture.AudioCapture
 import com.eqcoach.capture.CameraCapture
 import com.eqcoach.model.Verdict
 import com.eqcoach.network.AnalyzeClient
+import com.eqcoach.network.AnalyzeResponse
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+import kotlin.math.sqrt
 
 /**
  * Concrete implementation of [CaptureService] that coordinates camera frame
  * capture and microphone audio capture.
- *
- * Wave 1 (STORY-2.1 & STORY-2.2): captures frames and audio and exposes them
- * for inspection. The verdict is always [Verdict.GRAY] until server
- * communication is added in Wave 2 (STORY-2.3).
- *
- * Wave 2 (STORY-2.3): [getCurrentVerdict] POSTs frame + audio to the inference
- * server via [AnalyzeClient] and returns the parsed verdict.
  */
 class CaptureServiceImpl(private val context: Context) : CaptureService {
 
     companion object {
         private const val TAG = "CaptureServiceImpl"
+        private const val WAV_HEADER_SIZE = 44
     }
 
     private val cameraCapture = CameraCapture(context)
@@ -34,17 +32,18 @@ class CaptureServiceImpl(private val context: Context) : CaptureService {
     @Volatile
     private var currentVerdict: Verdict = Verdict.GRAY
 
-    /** Most recently captured JPEG frame (available for Wave 2). */
     @Volatile
-    var latestFrameData: ByteArray? = null
+    override var lastFrameData: ByteArray? = null
         private set
 
-    /** Most recently captured WAV audio chunk (available for Wave 2). */
+    @Volatile
+    override var audioLevel: Float = 0f
+        private set
+
     @Volatile
     var latestAudioData: ByteArray? = null
         private set
 
-    /** Non-null if camera or mic failed to start. */
     @Volatile
     var startError: String? = null
         private set
@@ -53,14 +52,12 @@ class CaptureServiceImpl(private val context: Context) : CaptureService {
         if (isActive) return
         startError = null
 
-        // Validate front camera availability synchronously.
         if (cameraCapture.findFrontCameraId() == null) {
             startError = "No front-facing camera available"
             Log.e(TAG, startError!!)
             return
         }
 
-        // Start camera (initialises asynchronously on background thread).
         try {
             cameraCapture.start()
         } catch (e: Exception) {
@@ -69,7 +66,6 @@ class CaptureServiceImpl(private val context: Context) : CaptureService {
             return
         }
 
-        // Start audio recording.
         val audioResult = audioCapture.start()
         if (audioResult.isFailure) {
             startError = "Microphone unavailable: ${audioResult.exceptionOrNull()?.message}"
@@ -87,33 +83,45 @@ class CaptureServiceImpl(private val context: Context) : CaptureService {
         analyzeClient.cancelInflight()
         cameraCapture.stop()
         audioCapture.stop()
-        latestFrameData = null
+        lastFrameData = null
         latestAudioData = null
+        audioLevel = 0f
         currentVerdict = Verdict.GRAY
         Log.i(TAG, "Capture stopped")
     }
 
-    /**
-     * Grabs the latest camera frame and audio chunk, POSTs them to the
-     * inference server, and returns the parsed verdict.
-     *
-     * Returns [Verdict.GRAY] if capture data is not yet available (camera
-     * still initializing or no audio buffered). Throws [ServerException] on
-     * network/server errors so the caller can surface feedback to the user.
-     */
-    override suspend fun getCurrentVerdict(): Verdict {
-        if (!isActive) return Verdict.GRAY
+    override suspend fun getCurrentResult(): AnalyzeResponse? {
+        if (!isActive) return null
 
         val frame = cameraCapture.captureFrame()
-        latestFrameData = frame
+        lastFrameData = frame
 
         val audio = audioCapture.getLatestChunk()
         latestAudioData = audio
+        audioLevel = computeRms(audio)
 
-        if (frame == null || audio == null) return Verdict.GRAY
+        if (frame == null || audio == null) return null
 
-        val verdict = analyzeClient.analyze(frame, audio)
-        currentVerdict = verdict
-        return verdict
+        val result = analyzeClient.analyze(frame, audio)
+        currentVerdict = result.verdict
+        return result
+    }
+
+    /**
+     * Compute RMS (0.0–1.0) from 16-bit PCM WAV bytes.
+     * Skips the 44-byte WAV header, reads samples as little-endian Short.
+     */
+    private fun computeRms(wavBytes: ByteArray?): Float {
+        if (wavBytes == null || wavBytes.size <= WAV_HEADER_SIZE) return 0f
+        val pcm = ByteBuffer.wrap(wavBytes, WAV_HEADER_SIZE, wavBytes.size - WAV_HEADER_SIZE)
+            .order(ByteOrder.LITTLE_ENDIAN)
+            .asShortBuffer()
+        var sumSquares = 0.0
+        val count = pcm.remaining()
+        for (i in 0 until count) {
+            val sample = pcm.get().toDouble() / Short.MAX_VALUE
+            sumSquares += sample * sample
+        }
+        return sqrt(sumSquares / count).toFloat().coerceIn(0f, 1f)
     }
 }

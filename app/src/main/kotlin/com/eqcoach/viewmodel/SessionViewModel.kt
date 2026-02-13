@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.eqcoach.config.AppConfig
 import com.eqcoach.model.SessionState
 import com.eqcoach.model.Verdict
+import com.eqcoach.network.DebugInfo
 import com.eqcoach.network.ServerException
 import com.eqcoach.service.CaptureService
 import kotlinx.coroutines.CancellationException
@@ -31,6 +32,15 @@ class SessionViewModel : ViewModel() {
 
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
+
+    private val _debugInfo = MutableStateFlow<DebugInfo?>(null)
+    val debugInfo: StateFlow<DebugInfo?> = _debugInfo.asStateFlow()
+
+    private val _lastFrame = MutableStateFlow<ByteArray?>(null)
+    val lastFrame: StateFlow<ByteArray?> = _lastFrame.asStateFlow()
+
+    private val _audioLevel = MutableStateFlow(0f)
+    val audioLevel: StateFlow<Float> = _audioLevel.asStateFlow()
 
     private var captureService: CaptureService? = null
     private var pollJob: Job? = null
@@ -68,8 +78,11 @@ class SessionViewModel : ViewModel() {
             while (isActive && _sessionState.value == SessionState.ACTIVE) {
                 try {
                     captureService?.let { service ->
-                        val verdict = service.getCurrentVerdict()
-                        _currentVerdict.value = verdict
+                        val result = service.getCurrentResult()
+                        _currentVerdict.value = result?.verdict ?: Verdict.GRAY
+                        _debugInfo.value = result?.debug
+                        _lastFrame.value = service.lastFrameData
+                        _audioLevel.value = service.audioLevel
                     }
                 } catch (e: CancellationException) {
                     throw e

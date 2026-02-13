@@ -21,15 +21,18 @@ async def analyze(
     audio: UploadFile = File(...),
 ) -> AnalyzeResponse:
     """Accept an image frame and audio clip, return an emotion verdict."""
-    logger.info("Received /analyze request")
+    logger.info("Received /analyze request — frame=%s (%s), audio=%s (%s)",
+                frame.filename, frame.content_type, audio.filename, audio.content_type)
 
     # Validate content types
     if frame.content_type not in ALLOWED_IMAGE_TYPES:
+        logger.warning("Rejected: invalid frame content_type=%s", frame.content_type)
         raise HTTPException(
             status_code=422,
             detail=f"Invalid content type for frame: {frame.content_type}. Expected image/jpeg.",
         )
     if audio.content_type not in ALLOWED_AUDIO_TYPES:
+        logger.warning("Rejected: invalid audio content_type=%s", audio.content_type)
         raise HTTPException(
             status_code=422,
             detail=f"Invalid content type for audio: {audio.content_type}. Expected audio/wav.",
@@ -38,10 +41,13 @@ async def analyze(
     # Read file bytes
     image_bytes = await frame.read()
     audio_bytes = await audio.read()
+    logger.info("Payload sizes — frame=%d bytes, audio=%d bytes", len(image_bytes), len(audio_bytes))
 
     if not image_bytes:
+        logger.warning("Rejected: frame file is empty")
         raise HTTPException(status_code=422, detail="Frame file is empty.")
     if not audio_bytes:
+        logger.warning("Rejected: audio file is empty")
         raise HTTPException(status_code=422, detail="Audio file is empty.")
 
     loop = asyncio.get_event_loop()
@@ -71,6 +77,25 @@ async def analyze(
         logger.exception("Score fusion failed")
         raise HTTPException(status_code=500, detail="Score fusion failed")
 
-    logger.info("Analysis complete — verdict: %s", verdict.value)
+    fused_score = (
+        facial_result.emotions.get("angry", 0.0) * 0.60
+        + speech_result.emotions.get("angry", 0.0) * 0.40
+    )
 
-    return AnalyzeResponse(verdict=verdict)
+    logger.info("Analysis complete — verdict: %s | facial=%s dominant=%s | speech=%s dominant=%s | fused=%.3f",
+                verdict.value,
+                {k: round(v, 3) for k, v in facial_result.emotions.items()},
+                facial_result.dominant,
+                {k: round(v, 3) for k, v in speech_result.emotions.items()},
+                speech_result.dominant,
+                fused_score)
+
+    debug = {
+        "facial_emotions": {k: round(v, 3) for k, v in facial_result.emotions.items()},
+        "facial_dominant": facial_result.dominant,
+        "speech_emotions": {k: round(v, 3) for k, v in speech_result.emotions.items()},
+        "speech_dominant": speech_result.dominant,
+        "fused_score": round(fused_score, 3),
+    }
+
+    return AnalyzeResponse(verdict=verdict, debug=debug)

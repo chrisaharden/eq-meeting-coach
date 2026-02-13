@@ -13,6 +13,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.eqcoach.service.CaptureServiceImpl
 import com.eqcoach.ui.screens.home.HomeScreen
 import com.eqcoach.ui.screens.indicator.IndicatorScreen
 import com.eqcoach.ui.screens.permission.PermissionScreen
@@ -25,6 +26,10 @@ fun EQCoachNavGraph(
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+
+    // Wire CaptureServiceImpl into the ViewModel (once)
+    val captureService = androidx.compose.runtime.remember { CaptureServiceImpl(context) }
+    sessionViewModel.setCaptureService(captureService)
 
     // Re-check permissions every time the app resumes
     DisposableEffect(lifecycleOwner) {

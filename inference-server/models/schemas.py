@@ -23,6 +23,7 @@ class Verdict(str, Enum):
 
 class AnalyzeResponse(BaseModel):
     verdict: Verdict
+    debug: dict[str, object] | None = None
 
 
 class HealthResponse(BaseModel):

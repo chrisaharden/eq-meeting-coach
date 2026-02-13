@@ -2,7 +2,10 @@ package com.eqcoach.capture
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.ImageFormat
+import android.graphics.Matrix
 import android.graphics.SurfaceTexture
 import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraCharacteristics
@@ -15,8 +18,10 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.util.Log
 import android.view.Surface
+import android.view.WindowManager
 import com.eqcoach.config.AppConfig
 import kotlinx.coroutines.suspendCancellableCoroutine
+import java.io.ByteArrayOutputStream
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
@@ -43,6 +48,8 @@ class CameraCapture(private val context: Context) {
     private var backgroundHandler: Handler? = null
     private var dummyTexture: SurfaceTexture? = null
     private var dummySurface: Surface? = null
+
+    private var sensorOrientation: Int = 0
 
     @Volatile
     private var isReady = false
@@ -73,6 +80,10 @@ class CameraCapture(private val context: Context) {
         val cameraId = findFrontCameraId()
             ?: throw IllegalStateException("No front-facing camera available")
 
+        val characteristics = cameraManager.getCameraCharacteristics(cameraId)
+        sensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION) ?: 0
+        Log.i(TAG, "Front camera sensor orientation: $sensorOrientation")
+
         startError = null
         isReady = false
 
@@ -99,9 +110,10 @@ class CameraCapture(private val context: Context) {
                 if (image != null) {
                     try {
                         val buffer = image.planes[0].buffer
-                        val bytes = ByteArray(buffer.remaining())
-                        buffer.get(bytes)
-                        if (cont.isActive) cont.resume(bytes)
+                        val rawBytes = ByteArray(buffer.remaining())
+                        buffer.get(rawBytes)
+                        val rotated = rotateJpeg(rawBytes, getRotationCompensation())
+                        if (cont.isActive) cont.resume(rotated)
                     } finally {
                         image.close()
                     }
@@ -202,6 +214,43 @@ class CameraCapture(private val context: Context) {
             },
             backgroundHandler
         )
+    }
+
+    /**
+     * Compute the rotation (degrees) needed to make the JPEG upright
+     * given the sensor orientation and current device rotation.
+     * Front-facing camera formula: (sensorOrientation + deviceDegrees) % 360
+     */
+    @Suppress("DEPRECATION")
+    private fun getRotationCompensation(): Int {
+        val displayRotation = (context.getSystemService(Context.WINDOW_SERVICE) as WindowManager)
+            .defaultDisplay.rotation
+        val deviceDegrees = when (displayRotation) {
+            Surface.ROTATION_0 -> 0
+            Surface.ROTATION_90 -> 90
+            Surface.ROTATION_180 -> 180
+            Surface.ROTATION_270 -> 270
+            else -> 0
+        }
+        val rotation = (sensorOrientation + deviceDegrees) % 360
+        Log.d(TAG, "Rotation compensation: sensor=$sensorOrientation device=$deviceDegrees result=$rotation")
+        return rotation
+    }
+
+    /**
+     * Decode JPEG, rotate by [degrees], and re-encode.
+     * Returns the original bytes if degrees is 0 or decoding fails.
+     */
+    private fun rotateJpeg(jpegBytes: ByteArray, degrees: Int): ByteArray {
+        if (degrees == 0) return jpegBytes
+        val original = BitmapFactory.decodeByteArray(jpegBytes, 0, jpegBytes.size) ?: return jpegBytes
+        val matrix = Matrix().apply { postRotate(degrees.toFloat()) }
+        val rotated = Bitmap.createBitmap(original, 0, 0, original.width, original.height, matrix, true)
+        val output = ByteArrayOutputStream()
+        rotated.compress(Bitmap.CompressFormat.JPEG, 90, output)
+        if (rotated !== original) rotated.recycle()
+        original.recycle()
+        return output.toByteArray()
     }
 
     @Suppress("DEPRECATION")

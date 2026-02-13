@@ -1,6 +1,6 @@
 package com.eqcoach.service
 
-import com.eqcoach.model.Verdict
+import com.eqcoach.network.AnalyzeResponse
 
 /**
  * Interface for the capture-and-analyze loop.
@@ -11,5 +11,11 @@ import com.eqcoach.model.Verdict
 interface CaptureService {
     fun startCapture()
     fun stopCapture()
-    suspend fun getCurrentVerdict(): Verdict
+    suspend fun getCurrentResult(): AnalyzeResponse?
+
+    /** Most recently captured JPEG frame (for debug preview). */
+    val lastFrameData: ByteArray?
+
+    /** Audio RMS level 0.0–1.0 from most recent capture. */
+    val audioLevel: Float
 }

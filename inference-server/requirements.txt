@@ -5,7 +5,7 @@ pydantic>=2.5.0
 pyyaml>=6.0.1
 deepface>=0.0.89
 tf-keras>=2.16.0
-funasr==1.0.23
+funasr>=1.1.0
 modelscope
 umap-learn
 torch==2.1.0
